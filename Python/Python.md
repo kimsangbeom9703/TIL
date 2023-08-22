@@ -8,13 +8,14 @@
 ```
 
 
-##   파이썬 설치
+#   파이썬 설치
 
-#   윈도우 
-    ```
-        1.  https://www.python.org/downloads/
-    ```
-#   리눅스
-    ```
-        -   yum install python3
-    ```
+    ###  윈도우 
+
+        https://www.python.org/downloads/
+
+    ###   리눅스
+
+        yum install python3
+        yum install python3-pip.noarch  // pip 패키지 매니저 설치.
+
