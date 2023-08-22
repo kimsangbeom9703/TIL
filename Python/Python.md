@@ -36,8 +36,14 @@
 
     
     1.  pip install virtualenv
-
-    
+    2.  mkdir virtualenv
+        -   앞으로 작업을 하기 위해 virtualenv 안에 가상환경을 구성 할 예정.
+    3.  cd virtualenv
+    4.  virtualenv server_1 or virtualenv server_1  -p python3.10.5
+        -   가상 환경 구성 / 버전 지정 설치
+    5.  Linux/Mac OS    :  source /virtualenv/server_1/bin/activate
+        Windows :   ./virtualenv/server_1/Scripts/activate
+    6.  deactivate  /   가상 환경 비활성화
 ```
 
 
