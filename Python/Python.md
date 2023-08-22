@@ -41,9 +41,13 @@
     3.  cd virtualenv
     4.  virtualenv server_1 or virtualenv server_1  -p python3.10.5
         -   가상 환경 구성 / 버전 지정 설치
-    5.  Linux/Mac OS    :  source /virtualenv/server_1/bin/activate
-        Windows :   ./virtualenv/server_1/Scripts/activate
-    6.  deactivate  /   가상 환경 비활성화
+    5.  가상 환경 활성화
+        Linux/Mac OS    :  source /virtualenv/server_1/bin/activate
+        Windows         :  /virtualenv/server_1/Scripts/activate
+            -   활성화 = (server_1) PS C:\ksb_project\python\경로>  
+                (가상 환경)
+    6.  가상 환경 비활성화
+        deactivate
 ```
 
 
