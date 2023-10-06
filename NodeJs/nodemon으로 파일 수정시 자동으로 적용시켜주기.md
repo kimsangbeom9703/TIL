@@ -1,4 +1,4 @@
-    # [NodeJS] nodemon으로 파일 수정시 자동으로 적용시켜주기
+# [NodeJS] nodemon으로 파일 수정시 자동으로 적용시켜주기
 
 ## 참고
 <https://velog.io/@chy0428/Node-JS-Nodemon-%EC%84%A4%EC%B9%98>
