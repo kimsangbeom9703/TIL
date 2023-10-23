@@ -63,7 +63,13 @@
             proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
         }
 }
+```
 
+### ssl 인증서 재갱신
+```
+    crontab -e 등록
+   
+    0 3 * * * /usr/bin/certbot renew --renew-hook="systemctl restart nginx" >> /var/log/sysmate/crontab/ssl_renew`date +\%Y\%m\%d\%H\%M`.log 2>&1
 
 ```
 
