@@ -24,7 +24,7 @@
 ```
 ## Nginx 중지
 ```
-    service stop nginx
+    service nginx stop
 ```
 
 ## 인증서 생성
