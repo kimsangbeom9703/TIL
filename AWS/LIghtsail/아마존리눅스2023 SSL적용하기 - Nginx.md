@@ -69,7 +69,7 @@
 ```
     crontab -e 등록
    
-    0 3 * * * /usr/bin/certbot renew --renew-hook="systemctl restart nginx" >> /var/log/sysmate/crontab/ssl_renew`date +\%Y\%m\%d\%H\%M`.log 2>&1
+    0 3 * * * /usr/bin/certbot renew --renew-hook="systemctl restart nginx" >> /var/log/sysmate/crontab/ssl_renew_`date +\%Y\%m\%d\%H\%M`.log 2>&1
 
 ```
 
