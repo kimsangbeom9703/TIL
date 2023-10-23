@@ -2,7 +2,10 @@
 
 ##  설치
 ```
-    yum install php
+    yum install php php-mysqli php-intl 
+
+    service php-fpm start
+    service enable php-fpm
 ```
 
 
