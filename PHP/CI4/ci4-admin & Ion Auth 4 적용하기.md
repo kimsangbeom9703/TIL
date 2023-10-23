@@ -31,7 +31,7 @@
     Config/Autoload.php
     
     public $psr4 = [
-        'App'         => APPPATH,                // To ensure filters, etc still found,
+        // 'App'         => APPPATH,                // To ensure filters, etc still found,
         APP_NAMESPACE => APPPATH, // For custom app namespace
         'Config'      => APPPATH . 'Config',
         'IonAuth' => ROOTPATH . 'CodeIgniter-Ion-Auth',

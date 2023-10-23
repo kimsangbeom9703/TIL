@@ -60,3 +60,9 @@ server {
         }
 }
 ```
+
+## 소스 수정 후 적용
+```
+    소스 수정 후 재시작 하지 않으면 적용되지않는다.
+    systemctl restart gunicorn
+```
