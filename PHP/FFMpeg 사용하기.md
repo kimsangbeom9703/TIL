@@ -1,4 +1,4 @@
-# [PHP] FFMpeg 사용하기
+# [PHP/Ci4] FFMpeg 사용하여 동영상 재생시간 구하기
 
 ## 사용이유
 ```
@@ -51,5 +51,5 @@
         }
        return $duration;
     }
-        
+
 ```
