@@ -8,10 +8,14 @@ PM2_HOME = c:\etc\.pm2
 ## PM2 설치
 ```
 
-npm i -g pm2 pm2-windows-service npm-check-updates
+npm i -g pm2 pm2-windows-service npm-check-updates pm2-windows-startup
+
+pm2-startup install 
+
 
 pm2-service-install
 Y
+
 
 ```
 
