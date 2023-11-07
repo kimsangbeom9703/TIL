@@ -6,28 +6,19 @@
 PM2_HOME = c:\etc\.pm2
 ```
 ## PM2 설치
-```
-
-npm i -g pm2 pm2-windows-service npm-check-updates pm2-windows-startup
-
-pm2-startup install 
-
-
-pm2-service-install
-Y
-
-
+```bash
+    npm i -g pm2 pm2-windows-service npm-check-updates pm2-windows-startup
+    pm2-startup install 
+    pm2-service-install
+    Y
 ```
 
 ## PM2 저장
 
-```
+```bash
     pm2 start ./bin/www
-
     pm2 save
-
     pm2 resurrect
-
     pm2 ls
 ```
 
