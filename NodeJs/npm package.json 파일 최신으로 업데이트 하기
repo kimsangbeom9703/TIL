@@ -1,0 +1,18 @@
+# [NPM] npm package.json 파일 최신으로 업데이트하기
+
+```txt
+    package.json 파일만 있으면 같은 환경을 구성하기 쉽다는건 알겠는데 설치한
+    모듈의 버전을 전체 최신으로 하고싶으면 어떻게 하지?? 하는 의문이 생겨 알아보았다.
+```
+
+## 설치
+```
+    npm install -g npm-check-updates
+```
+
+## 사용
+```
+    ncu -u
+
+    npm install
+```
