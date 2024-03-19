@@ -1,24 +1,16 @@
 # [Server/RockyLinux] ssh 접속 허용하기
 
-# Root 계정 
-```
-    패스워드 생성 후 Root 계정으로는 ssh 접속 안되게 설정
-```
+# 허용방법
 
-# 사용자 추가
 ```
-    webmaster 계정 추가
-```
+    1. vi /etc/ssh/sshd_config
+        -   port 22 주석 해제
+    
+    2. systemctl start sshd.service
 
-# 시간설정
-```
-    아시아 선택
-```
+    3. systemctl status sshd.service
+    
+    4. firewall-cmd --zone=public --add-port=22/tcp --permanent
 
-# 디스크 관리
-```
-    사용용도에 맞게 설정
-    나는 디스크 메인 1 , 서브2가 있었고 설치시 하드를 다 고르려고 했으나
-    다 선택시 각각 os가 깔린다고 하여서 메인1만 선택 후 설치
-    나머지 서브는 마운트 하기로 함.
+    5. firewall-cmd --reload
 ```
