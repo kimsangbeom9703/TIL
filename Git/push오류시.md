@@ -20,3 +20,6 @@ nothing to commit, working tree clean
 6. git push -f origin main
 
 ```
+
+
+git remote set-url origin https://계정이름@github.com/~~~

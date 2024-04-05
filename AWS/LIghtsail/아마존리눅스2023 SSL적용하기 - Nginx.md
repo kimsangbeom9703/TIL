@@ -39,7 +39,7 @@
 
     인증받을 도메인 입력.
 ```
-
+http://www.bsbukgutour.svr.kr/
 ## SSL 인증서 적용
 ```
     /etc/nginx/conf.d/ssl.conf 생성
