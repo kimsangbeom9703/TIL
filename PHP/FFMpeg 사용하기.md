@@ -21,7 +21,7 @@
 
     ln -s /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg
 
-    ln -s /usr/local/bin/ffmpeg/ffprode /usr/bin/ffprode
+    ln -s /usr/local/bin/ffmpeg/ffprobe /usr/bin/ffprobe
 ```
 
 ## ci4 사용
