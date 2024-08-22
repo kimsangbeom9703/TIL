@@ -26,7 +26,7 @@
 ```
     service nginx stop
 ```
-
+http://daedeok-school.svr.kr/
 ## 인증서 생성
 ```
     certbot certonly --standalone
