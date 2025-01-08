@@ -17,7 +17,7 @@
     
     tar -xf ffmpeg-release-amd64-static.tar.xz
 
-    cp -a /usr/local/bin/ffmpeg/ffmpeg-7.0.1-amd64-static/ . /usr/local/bin/ffmpeg/
+    cp -a /usr/local/bin/ffmpeg/ffmpeg-7.0.1-amd64-static/ ./usr/local/bin/ffmpeg/
 
     ln -s /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg
 
