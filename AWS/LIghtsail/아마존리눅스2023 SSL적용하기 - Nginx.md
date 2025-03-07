@@ -29,7 +29,7 @@
 ## 인증서 생성
 ```
     certbot certonly --standalone
-testkdb.ezcms.kr
+    
     EMAIL 입력
 
     Y
