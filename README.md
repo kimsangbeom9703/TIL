@@ -1,49 +1,36 @@
-# TIL
+# TIL (Today I Learned)
 
-#   Today I Learned
-```
-    그날그날 내가 공부한 것.
-```
+> 매일 학습한 내용을 정리하는 저장소 (언어/프레임워크/기술 스택 중심)
 
-## 개발 공부 플로우
+## 🎯 목적
+이 저장소는 내가 공부한 자바, 자바스크립트, Python 등 다양한 기술을 정리하고, 복습 및 공유를 위해 운영하는 곳이야.  
+코드 스니펫, 개념 요약, 실습 예제 등이 포함돼 있어.
 
-## Java
-
-```
-    1. 기초문법
-    2. 톰캣
-    3. 스프링
-    4. 스프링부트
-```
-
-## Javascript
+## 📂 디렉토리 구조 & 학습 흐름
 
 ```
-    1. 자바스크립트 ES6
-    2. npm or yarn
-    3. TypeScript
-    4. NodeJS
-    5. Express
-    6. k6 테스트도구
-    7. Electron
-    8. NestJS
-    9. WebPack or Vite
-    10. Docker
-    11. Kubernetes
-```
-
-## Python
-```
-    1. Python
-    2. FastAPI
-    3. Django
-    4. Pandas
-```
-
-## nodejs
-```
-    1. typescript
-    2. express
-    3. express app
-    4. nestjs
+TIL/
+├── Java/
+│ ├── 기본 문법
+│ ├── Tomcat
+│ ├── Spring
+│ └── SpringBoot
+├── Javascript/
+│ ├── ES6
+│ ├── npm / Yarn
+│ ├── TypeScript
+│ ├── NodeJS / Express
+│ ├── Electron
+│ └── NestJS
+├── Python/
+│ ├── 기본 문법
+│ ├── FastAPI
+│ └── Django / 데이터 관련 라이브러리
+├── Project/
+│ └── MaeJangGo/ ← 네 프로젝트 코드를 여기에 (백엔드, 프론트 등)
+├── DB/
+│ └── mariadb 관련 스크립트
+├── Docker/
+│ └── Dockerfile, docker-compose 설정
+└── README.md
 ```
