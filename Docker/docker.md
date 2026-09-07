@@ -802,6 +802,328 @@ docker compose up --build -d
 PC에서 DB툴로 볼 때는 `localhost:5432`, 계정 `myuser` / `mypassword`, DB `mydb`.  
 5432가 이미 쓰 중이면 왼쪽만 바꾼다. 예: `"5433:5432"`
 
+### 헬스체크 — DB가 열린 뒤에 앱 시작
+
+`depends_on: db` 만 있으면 컨테이너가 **켜진 것**만 기다린다.  
+Postgres가 연결을 받기 전에 앱이 붙으면 `ECONNREFUSED`가 난다.
+
+그래서 db에 **헬스체크**를 넣고, 앱은 `healthy`가 된 뒤에 시작한다.
+
+```yaml
+  app:
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+
+  db:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+```
+
+| 항목 | 의미 |
+| --- | --- |
+| `pg_isready` | Postgres가 접속을 받을 수 있는지 확인하는 명령. 이미지에 들어 있다 |
+| `interval: 5s` | 5초마다 확인 |
+| `retries: 10` | 최대 10번 (약 50초) 실패하면 unhealthy |
+| `service_started` | Redis처럼 금방 열리는 서비스. 켜지기만 하면 됨 |
+| `service_healthy` | 앱은 db가 healthy 된 뒤에 시작 |
+
+yml만 바뀌었으면 이미지 다시 빌드는 필요 없다.
+
+```bash
+docker compose up -d
+```
+
+`docker compose ps` 에서 db의 STATUS가 `healthy` 인지 보면 된다.
+
+#### `depends_on`의 condition — 공식으로 3개
+
+이건 우리가 만든 값이 아니다. Compose 명세에 정해져 있다.
+
+문서: [Compose services / depends_on](https://docs.docker.com/reference/compose-file/services/#depends_on)
+
+실행 중에 확인하는 곳:
+
+```bash
+docker compose ps
+```
+
+STATUS 컬럼에 `Up`, `Up (health: starting)`, `Up (healthy)`, `Exited (0)` 처럼 보인다.  
+`service_healthy`는 여기서 `(healthy)`가 돼야 만족한다.
+
+헬스체크 로그가 필요하면:
+
+```bash
+docker inspect --format "{{json .State.Health}}" docker-test-db-1
+```
+
+condition은 **세 가지**다.
+
+| condition | 기다릴 때까지 | 헬스체크 | 언제 쓰나 |
+| --- | --- | --- | --- |
+| `service_started` | 컨테이너가 **켜지기만** 하면 | 필요 없음 | Redis처럼 기동이 빠른 서비스. 짧은 문법 `depends_on: - redis` 와 같음 |
+| `service_healthy` | 헬스체크가 **통과**할 때까지 | **필수** | Postgres, MySQL처럼 “켜짐”과 “접속 가능”이 다른 서비스 |
+| `service_completed_successfully` | 컨테이너가 **성공하고 종료**(exit 0)할 때까지 | 필요 없음 | 한 번 돌고 끝나는 작업. DB 마이그레이션, 초기 데이터 넣기 |
+
+동작 요약:
+
+- `service_started` — 프로세스만 뜨면 OK. 안의 앱이 준비됐는지는 모름. 아까 Postgres `ECONNREFUSED`가 난 이유.
+- `service_healthy` — `healthcheck.test` 명령이 성공해야 함. db에 `pg_isready`가 있는 이유. 헬스체크가 없으면 이 조건은 영원히 안 된다.
+- `service_completed_successfully` — “떠 있는 서버”가 아니라 “끝났어야 하는 작업”용. 예: `migrate`가 끝난 뒤에 `app` 시작.
+
+마이그레이션 예시 (지금은 안 넣어도 됨):
+
+```yaml
+  migrate:
+    build: .
+    command: ["npm", "run", "migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+```
+
+이 프로젝트에서:
+
+- Redis → `service_started` (빨리 열림)
+- Postgres → `service_healthy` (접속 가능해질 때까지)
+- `service_completed_successfully` → 아직 쓸 일 없음
+
+참고: `depends_on`에 `restart: true`, `required: false` 같은 옵션도 있지만, 시작 조건은 위 세 개가 전부다.
+
+---
+
+## `.env` — 비밀번호를 yml에서 빼기
+
+지금까지 `mypassword`가 `docker-compose.yml`에 그대로 있었다.  
+yml은 공유하고, 비밀 값은 로컬 파일로 둔다.
+
+Compose는 **같은 폴더의 `.env`** 를 자동으로 읽어서, yml의 `${변수}`를 치환한다.
+
+`.env`
+
+```
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=mypassword
+POSTGRES_DB=mydb
+```
+
+yml에서는 값을 직접 안 쓰고 변수만 쓴다.
+
+```yaml
+environment:
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB}
+```
+
+두 가지를 헷갈리면 안 된다.
+
+| 방식 | 하는 일 |
+| --- | --- |
+| 프로젝트 루트 `.env` | **yml 파일**의 `${이름}`을 채움 (Compose가 자동으로 읽음) |
+| `env_file:` | 그 파일 내용을 **컨테이너 환경변수**로 넣음 |
+
+지금은 전자만 쓴다. 같은 값이 app과 db에 들어가게 yml에서 `${}`로 넘긴다.
+
+`.env`는 이미지에 넣지 않는다. `.dockerignore`에 `.env`를 넣어 두었다.  
+git에 올릴 때도 `.gitignore`에 `.env`가 있다. 공유용은 `.env.example`만 둔다.
+
+이미 만들어 둔 Postgres 볼륨은 **처음 기동 때** 계정/비밀번호를 만든다.  
+`.env`의 비밀번호를 나중에 바꿔도, 볼륨을 지우지 않으면 DB 안의 비밀번호는 그대로다.
+
+적용:
+
+```bash
+docker compose up -d
+```
+
+yml과 `.env`만 바뀌었으면 `--build`는 필요 없다.
+
+---
+
+## 재시작 정책 (`restart`)
+
+컨테이너가 죽거나, 도커/PC를 재시작했을 때 다시 켤지 정한다.
+
+app, redis, db 세 서비스에 넣어 두었다.
+
+```yaml
+restart: unless-stopped
+```
+
+| 값 | 동작 | 언제 |
+| --- | --- | --- |
+| `no` | 다시 안 켬 (기본값) | 일회성 작업 |
+| `always` | 항상 다시 켬. `docker stop` 해도 도커가 재시작되면 또 뜸 |
+| `on-failure` | 에러로 끝났을 때만 다시 켬 | 배치 잡 |
+| `unless-stopped` | 항상 다시 켜되, **내가 `stop`한 것은 그대로 끔** | 평소 서버. 이걸 쓰면 됨 |
+
+`unless-stopped`와 `always`의 차이:  
+`docker compose stop` 한 뒤 PC를 재부팅하면, `always`는 다시 뜨고 `unless-stopped`는 꺼진 채로 남는다.
+
+yml만 바뀌었으니 `--build`는 필요 없다.
+
+```bash
+docker compose up -d
+```
+
+확인은 `docker compose ps` 로 세 컨테이너가 Up 이면 된다.
+
+---
+
+## 네트워크 — 컨테이너끼리 어떻게 말하는가
+
+네트워크를 따로 배운 이유는, 이미 쓰고 있는 이 한 줄 때문이다.
+
+```yaml
+POSTGRES_HOST: db
+```
+
+`db`는 파일 이름도, 내 PC 주소도 아니다. **같은 네트워크에 있는 컨테이너를 부르는 이름**이다.  
+이게 안 잡히면 “왜 localhost가 안 되지?”, “포트가 왜 두 개인가?”가 계속 꼬인다.
+
+### 컨테이너는 작은 컴퓨터다
+
+도커 없이 로컬에서 앱과 DB를 켜면, 둘 다 **내 PC 안**에 있다.
+
+- 앱: `localhost:3000`
+- DB: `localhost:5432`
+
+같은 컴퓨터라서 `127.0.0.1`로 서로 찾는다.
+
+컨테이너로 나누면 이야기가 바뀐다.  
+app, redis, db는 **각각 따로 격리된 작은 컴퓨터**다. 기본은 서로 못 본다.  
+옆집에 전화하려면 같은 동네(네트워크)에 있어야 한다.
+
+도커 네트워크 = 컨테이너들을 묶어 주는 **가상  LAN**.  
+Compose는 `up` 할 때 이 동네를 하나 만들어 주고, yml에 적힌 서비스를 전부 집어넣는다.  
+이름이 보통 `docker-test_default`다.
+
+같은 동네에 있으면 서로 말을 걸 수 있다. 다른 동네(frappe)와는 안 섞인다.
+
+### 이름은 전화번호부다
+
+동네 안에서 컨테이너마다 IP가 있다. 예전에 본 `172.20.0.3`이 db의 내부 주소였다.
+
+IP는 재시작할 때마다 바뀔 수 있어서, 앱에 `172.20.0.3`을 적지 않는다.  
+대신 서비스 이름 `db`, `redis`가 전화번호부(DNS)다.
+
+- `db` → 지금 Postgres 컨테이너의 IP
+- `redis` → 지금 Redis 컨테이너의 IP
+
+그래서 `POSTGRES_HOST: db` 는 “Postgres 컨테이너로 가서 5432로 붙어라”는 뜻이다.
+
+앱 안에서 `127.0.0.1`은 **앱 컨테이너 자기 자신**이다.  
+자기 안에는 Postgres가 없으니 연결이 거절된다.
+
+### `ports`는 내 PC에서 들어오는 문이다
+
+네트워크(내부)와 `ports`(외부)는 다르다.
+
+```
+내 브라우저  →  localhost:3000  →  (ports가 열어 준 문)  →  app 컨테이너
+DBeaver      →  localhost:5432  →  (ports가 열어 준 문)  →  db 컨테이너
+
+app 컨테이너 →  db:5432         →  같은 네트워크. ports 필요 없음
+app 컨테이너 →  redis:6379      →  같은 네트워크. Redis에 ports가 없는 이유
+```
+
+- `ports: "3000:3000"` — 내가 브라우저로 보려고
+- `ports: "5432:5432"` — 내가 DBeaver로 보려고
+- 앱이 DB에 붙을 때 — `db:5432`만 있으면 됨. 호스트 포트와 무관
+
+그래서 Redis는 PC에 포트를 안 열어도, 앱은 `redis:6379`로 붙는다.
+
+### 왜 이걸 설명하나
+
+1. 앱이 DB/Redis에 붙는 주소가 `localhost`가 아니라 **서비스 이름**인 이유
+2. 포트 충돌(3306, 5432)은 **내 PC에 연 문** 이야기이지, 컨테이너끼리 통신 이야기가 아닌 이유
+3. frappe Redis와 우리 Redis가 둘 다 6379여도 괜찮은 이유 — **네트워크가 다름**
+4. `ECONNREFUSED 172.20.0.3:5432` — 주소(`db` → IP)는 찾았는데, 그 컴퓨터의 5432가 아직 안 열린 상태
+
+확인:
+
+```bash
+docker network ls
+docker network inspect docker-test_default
+```
+
+`Containers`에 app, redis, db가 같이 있으면 “한 동네”다.
+
+지금은 Compose가 만든 기본 네트워크면 충분하다.  
+망을 나누거나 이름을 고정할 때만 yml에 `networks:`를 직접 적는다.
+
+---
+
+## 이미지 줄이기 — 실무에서 왜 쓰나
+
+로컬에서 Express 하나 돌릴 때는 이미지가 커도 잘 돈다.  
+실무에서 줄이는 이유는 **동작이 안 돼서가 아니라, 배포 비용** 때문이다.
+
+- 서버/`pull` 할 때마다 이미지 전체를 내려받는다. 클수록 배포가 느리다
+- CI에서 커밋마다 빌드한다. 클수록 파이프라인이 길어진다
+- 최종 이미지에 툴이 적을수록, 나중에 뚫렸을 때 쓸 수 있는 것도 줄어든다
+
+줄이는 수단은 이미 하나 쓰고 있다. `.dockerignore`로 `node_modules`, `.env`를 빼는 것.  
+여기에 **작은 베이스 이미지**와 **multi-stage**를 더한다.
+
+### 지금 Dockerfile
+
+```dockerfile
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+EXPOSE 3000
+CMD ["node", "app.js"]
+```
+
+| 부분 | 의미 |
+| --- | --- |
+| `node:20-alpine` | 알파인 리눅스. Debian `node:20`보다 훨씬 작다. Redis가 `redis:7-alpine`인 것과 같음 |
+| `AS deps` | 첫 단계 이름. 여기서는 패키지 설치만 한다 |
+| `npm ci --omit=dev` | `package-lock.json` 그대로 설치. 운영에 필요 없는(devDependencies) 패키지는 빼기 |
+| 두 번째 `FROM` | **최종 이미지가 여기서 다시 시작**한다. 앞 단계의 npm 캐시·중간 파일은 안 남음 |
+| `COPY --from=deps` | 설치가 끝난 `node_modules`만 최종 쪽으로 가져옴 |
+| `COPY . .` | 소스만 복사. `.dockerignore` 때문에 `node_modules`, `.env`는 안 들어감 |
+
+흐름:
+
+```
+1단계 deps:  package.json → npm ci → node_modules
+2단계 최종:  alpine + node_modules + app.js 만 남김
+```
+
+실무에서 프론트(React 등)를 빌드할 때도 같은 패턴이다.  
+1단계에서 `npm run build`로 `dist`를 만들고, 2단계 nginx에는 `dist`만 복사한다. Node 빌드 도구는 최종 이미지에 안 넣는다.
+
+적용 (Dockerfile이 바뀌었으니 `--build` 필요):
+
+```bash
+docker compose up --build -d
+docker images
+```
+
+`docker-test-app` 의 SIZE가 이전 `node:20` 때보다 줄어 있으면 된다.  
+`localhost:3000`에서 Redis / Postgres가 그대로면 동작은 유지된 거다.
+
 ---
 
 ## 지금까지의 흐름 정리
@@ -814,8 +1136,10 @@ PC에서 DB툴로 볼 때는 `localhost:5432`, 계정 `myuser` / `mypassword`, D
 5. docker logs / docker exec
 6. docker stop / docker rm
 7. -v 명명 볼륨 / 바인드 마운트
-8. docker-compose.yml               ← 앱 + Redis + Postgres
-9. docker compose up --build -d     ← 코드/패키지 반영하려면 --build
-10. localhost:3000 에서 Redis, Postgres 값 확인
-11. docker compose down
+8. docker-compose.yml               ← 앱 + Redis + Postgres + 헬스체크
+9. .env 로 비밀번호 분리
+10. restart: unless-stopped
+11. 네트워크 (서비스 이름이 DNS)
+12. alpine + multi-stage 로 이미지 축소
+13. docker compose up --build -d
 ```
